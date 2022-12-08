@@ -1,5 +1,5 @@
 # WalkingDropletTracking
-This repository includes all the datasets, codes, and other resources discussed in our paper X. 
+This repository includes all the datasets, codes, and other resources discussed in our paper X regarding walking droplets and granular flow experinents. 
 
 
 Here is a brief overview of the content of this repo:
