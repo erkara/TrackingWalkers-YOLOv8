@@ -9,8 +9,8 @@ import random
 import time
 import warnings
 import matplotlib.pyplot as plt
-warnings.filterwarnings('ignore')
 
+warnings.filterwarnings('ignore')
 
 
 def GetVideoInfo(video_path):
@@ -51,7 +51,7 @@ def CaptureFrames(video_path, image_dir, save_interval=1):
             filename = os.path.join(image_dir, str(int(frameId)) + '.jpg')
             cv2.imwrite(filename, frame)
     cap.release()
-    print(f'{count} frames captured!')
+    print(f'{count} frames captured! and saved to {image_dir}')
 
 
 def TrainValidTestSplit(image_dir, root_dir,
@@ -61,10 +61,10 @@ def TrainValidTestSplit(image_dir, root_dir,
     and root_dir/X/label. We then get images from image_dir and save to these folders accordingly
     based on the provided rations. Run only once, no safeguard to avoid duplicates.
     """
-    #create the folder structure
+    # create the folder structure
     folders = ["train", "valid", "test"]
     for folder in folders:
-        os.makedirs(f"{root_dir}/{folder}/images",exist_ok=True)
+        os.makedirs(f"{root_dir}/{folder}/images", exist_ok=True)
         os.makedirs(f"{root_dir}/{folder}/labels", exist_ok=True)
 
     train_dir = f"{root_dir}/train/images"
@@ -77,15 +77,11 @@ def TrainValidTestSplit(image_dir, root_dir,
         for names in filenames:
             image_paths.append(os.path.join(dirpath, names))
 
-
-
     random.shuffle(image_paths)
 
     train_image_list, temp = np.split(np.array(image_paths), [math.ceil(len(image_paths) * (train_ratio))])
     valid_image_list, test_image_list = np.split(temp,
                                                  [math.ceil(len(temp) * valid_ratio / (valid_ratio + test_ratio))])
-
-
 
     for train_image in train_image_list:
         shutil.copy(train_image, train_dir)
@@ -99,7 +95,6 @@ def TrainValidTestSplit(image_dir, root_dir,
     print(f"{len(train_image_list)} training images copied to {train_dir}\
     \n{len(valid_image_list)} validation images copied to {valid_dir}\
     \n{len(test_image_list)} testing images copied to {test_dir}")
-
 
 
 def GetImageAnnotationPairs(root_dir):
@@ -121,35 +116,36 @@ def GetImageAnnotationPairs(root_dir):
 
     return img_paths, lab_paths
 
-def CreateData(source_dir,dest_dir,n=1,exp='_',remove=True,rename=False):
+
+def CreateData(source_dir, dest_dir, n=1, exp='_', remove=True, rename=False):
     """Grab n images/labels from source_dir and move them to dest_dir
     accordingly. As usual, source_dir and dest_dir have the same structure.
     If necessary, rename them using 'exp' name. Usually it is
     a good idea to remove all the files in dest_dir.
     """
-    img_paths,label_paths = GetImageAnnotationPairs(source_dir)
-    #get all if n=-1
+    img_paths, label_paths = GetImageAnnotationPairs(source_dir)
+    # get all if n=-1
     if n == -1:
         n = len(img_paths)
     image2copy = img_paths[:n]
     label2copy = label_paths[:n]
-    image_dir = os.path.join(dest_dir,'images')
-    label_dir = os.path.join(dest_dir,'labels')
+    image_dir = os.path.join(dest_dir, 'images')
+    label_dir = os.path.join(dest_dir, 'labels')
 
-    #remove any existing files
+    # remove any existing files
     if remove:
         for file in os.scandir(image_dir):
             os.remove(file.path)
         for file in os.scandir(label_dir):
             os.remove(file.path)
-    #copy new files
+    # copy new files
     for image in image2copy:
         shutil.copy(image, image_dir)
         if rename:
             old_name = image.split("/")[-1]
-            old_path = os.path.join(image_dir,old_name)
+            old_path = os.path.join(image_dir, old_name)
             new_name = f"{exp}_{old_name}"
-            new_path = os.path.join(image_dir,new_name)
+            new_path = os.path.join(image_dir, new_name)
             os.rename(old_path, new_path)
     for labels in label2copy:
         shutil.copy(labels, label_dir)
@@ -160,10 +156,6 @@ def CreateData(source_dir,dest_dir,n=1,exp='_',remove=True,rename=False):
             new_path = os.path.join(label_dir, new_name)
             os.rename(old_path, new_path)
     print(f"removed all files from {image_dir} and created {len(image2copy)} images")
-
-
-
-
 
 
 def GetPredBboxes(model, img_path, color=(255, 0, 0)):
@@ -216,7 +208,6 @@ def GetImageBox(img_path, label_path, color=(0, 255, 0)):
     return img
 
 
-
 def GetCenters(detection):
     # (x_min,y_min,x_max,y_max,confidence,class)
     pred = detection.xyxy[0].detach().cpu().numpy()
@@ -261,7 +252,7 @@ def AddSpeed2DataFrameMulti(df, nd):
     t = df['time'].values
     for i in range(nd):
         xc = df.iloc[:, 2 * (i + 1)].values
-        yc = df.iloc[:, 2 * (i+1) + 1].values
+        yc = df.iloc[:, 2 * (i + 1) + 1].values
         dx = np.zeros(xc.size)
         dx[1:] = np.diff(xc) / np.diff(t)
         dy = np.zeros(yc.size)
@@ -287,11 +278,10 @@ def GetColNames(nd):
     l.insert(0, 'frame_id')
     l.insert(1, 'time')
 
-
-
     return l
 
-def GetNextCoordHungarian(nd, f1, f2, time, frameID,conf_score):
+
+def GetNextCoordHungarian(nd, f1, f2, time, frameID, conf_score):
     cost = [[0 for i in range(nd)] for j in range(nd)]
     for i in range(nd):
         for j in range(nd):
@@ -305,7 +295,7 @@ def GetNextCoordHungarian(nd, f1, f2, time, frameID,conf_score):
     return f2[col_ind[np.argsort(row_ind)]], temp_all
 
 
-def TrackDroplet(model, nd, video_path, conf_thresold, save_dir, save_name,show_trace=False):
+def TrackDroplet(model, nd, video_path, conf_thresold, save_dir, save_name, show_trace=False):
     """
 
     Args:
@@ -333,7 +323,7 @@ def TrackDroplet(model, nd, video_path, conf_thresold, save_dir, save_name,show_
     fps = cap.get(cv2.CAP_PROP_FPS)
     w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    size = (w,h)
+    size = (w, h)
 
     myvideo = cv2.VideoWriter(f'{save_dir}/{name}.avi', cv2.VideoWriter_fourcc(*'mp4v'), fps, size)
 
@@ -345,8 +335,7 @@ def TrackDroplet(model, nd, video_path, conf_thresold, save_dir, save_name,show_
     detect_counter = 0
 
     # BGR--> green,red,blue
-    colors = [(0, 255, 0), (0, 0, 255), (255, 0, 0), (255, 0, 255),(0,255,255)]
-
+    colors = [(0, 255, 0), (0, 0, 255), (255, 0, 0), (255, 0, 255), (0, 255, 255)]
 
     data = pd.DataFrame(columns=GetColNames(nd))
     while cap.isOpened():
@@ -379,7 +368,7 @@ def TrackDroplet(model, nd, video_path, conf_thresold, save_dir, save_name,show_
                 t0 = time_second
 
             if detect_counter > 1:
-                C1, temp_all = GetNextCoordHungarian(nd, C0, centers, time_second, int(frameID),conf_score)
+                C1, temp_all = GetNextCoordHungarian(nd, C0, centers, time_second, int(frameID), conf_score)
                 data.loc[detect_counter] = temp_all
                 C0 = C1
 
@@ -391,10 +380,10 @@ def TrackDroplet(model, nd, video_path, conf_thresold, save_dir, save_name,show_
                     if show_trace:
                         cv2.polylines(np_image, [pts], False, colors[i], thickness=2)
                         cv2.putText(np_image, f'{i}', (int(C0[i][0]), int(C0[i][1]) - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.9, colors[i], 2)
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, colors[i], 2)
                     else:
                         cv2.putText(np_image, f'{i}', (int(C0[i][0]), int(C0[i][1]) - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.9, colors[i], 2)
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, colors[i], 2)
                 myvideo.write(np_image)
                 cv2.imshow(f'{name}', np_image)
 
@@ -410,20 +399,22 @@ def TrackDroplet(model, nd, video_path, conf_thresold, save_dir, save_name,show_
     data.to_csv(f'{save_dir}/{save_name}.csv', index=False)
     print(f"results are saved to {save_dir}...")
 
-
-    return detect_counter,frame_counter,data
-
+    return detect_counter, frame_counter, data
 
 
-
-def UpdateData(data_dir,dest_dir,N):
+def UpdateData(data_dir, dest_dir, N):
+    """
+    Copy N images from data_dir/train and data_dir/valid
+    to dest_dir/train and dest_dir/valid. We do this to dynamically
+    train a model with increasing number of train/valid images.
+    """
     K = int(np.ceil((N / 0.7) * 0.2))
     root_train_dir = f"{data_dir}/train"
     root_valid_dir = f"{data_dir}/valid"
 
     temp_dir = f"{dest_dir}/temp"
     if not os.path.exists(temp_dir):
-        shutil.copytree(data_dir,temp_dir)
+        shutil.copytree(data_dir, temp_dir)
 
     temp_train_imagedir = os.path.join(temp_dir, 'train/images')
     temp_train_labeldir = os.path.join(temp_dir, 'train/labels')
@@ -431,79 +422,92 @@ def UpdateData(data_dir,dest_dir,N):
     temp_valid_imagedir = os.path.join(temp_dir, 'valid/images')
     temp_valid_labeldir = os.path.join(temp_dir, 'valid/labels')
 
-
     x = [root_train_dir, root_valid_dir]
-    y = [temp_train_imagedir,temp_valid_imagedir]
-    z = [temp_train_labeldir,temp_valid_labeldir]
+    y = [temp_train_imagedir, temp_valid_imagedir]
+    z = [temp_train_labeldir, temp_valid_labeldir]
 
-    k=0
-    for (root_dir,temp_image_dir,temp_label_dir) in zip(x,y,z):
+    i = 0
+    for (root_dir, temp_image_dir, temp_label_dir) in zip(x, y, z):
         img_paths, lab_paths = GetImageAnnotationPairs(root_dir)
-        if k==1:
-            N=K
+        if i == 1:
+            N = K
+        if N > len(img_paths):
+            print(f"{root_dir} does not have {N} images, switching to N={len(img_paths) - 1}!\n")
+            N = len(img_paths) - 1
+
         img2copy = img_paths[:N]
         lab2copy = lab_paths[:N]
 
         # empty temp_train_dir then populate it
-        if N <= len(img_paths):
-            if len(os.listdir(temp_image_dir)) != 0:
-                for file in os.scandir(temp_image_dir):
-                    os.remove(file.path)
-                for file in os.scandir(temp_label_dir):
-                    os.remove(file.path)
-                for image in img2copy:
-                    shutil.copy(image, temp_image_dir)
-                for labels in lab2copy:
-                    shutil.copy(labels, temp_label_dir)
-            else:
-                for image in img2copy:
-                    shutil.copy(image, temp_image_dir)
-                for labels in lab2copy:
-                    shutil.copy(labels, temp_label_dir)
-            print(f"updated {temp_image_dir} folder with {N} new images/labels out of {len(img_paths)}")
-
+        if len(os.listdir(temp_image_dir)) != 0:
+            for file in os.scandir(temp_image_dir):
+                os.remove(file.path)
+            for file in os.scandir(temp_label_dir):
+                os.remove(file.path)
+            for image in img2copy:
+                shutil.copy(image, temp_image_dir)
+            for labels in lab2copy:
+                shutil.copy(labels, temp_label_dir)
         else:
-            print(f"N={N}> #images={len(img_paths)}")
+            for image in img2copy:
+                shutil.copy(image, temp_image_dir)
+            for labels in lab2copy:
+                shutil.copy(labels, temp_label_dir)
+        print(f"updated {temp_image_dir} folder with {N} new images/labels out of {len(img_paths)} from {root_dir}")
 
-        k+=1
+        i += 1
 
 
-def OptimumTrainImages(data_dir,project_dir,max_image_number,num_interval,epoch,save_name):
-    sample_numbers = [num for num in range(1,max_image_number+1) if num%num_interval==0]
+def OptimumTrainImages(data_dir, project_dir, max_image_number=150, start_image_num=5, final_image_num=150,
+                       num_interval=5, epoch=50, save_name='test_scores'):
+    """
+    Inspect optimum number of images to train your model. Every action is performed in project_dir/temp folder
+    then we remove it. We train/test the model for number of images between from start_image_num and final_image_num
+    with num_interval intervals for epoch numbers.
+    """
+
+    if final_image_num > max_image_number:
+        print(f"dont have {final_image_num} images, switching to {max_image_number} images")
+        final_image_num = max_image_number
+    if start_image_num < 4:
+        print("cannot keep 0.7/0.2 train/test ratio with {start_image_num} intial images switching to 4")
+        start_image_num = 4
+
+    sample_numbers = [num for num in range(start_image_num, final_image_num + 1) if num % num_interval == 0]
 
     print(f"we will train model with {sample_numbers} training images")
 
-    #save number of train_images, 'mAP@0.5', 'mAP@0.5..0.95' to a dataframe in the current directory
-    pd.DataFrame(columns=['num_train_image', 'mAP@0.5', 'mAP@0.5..0.95']).to_csv(f"{project_dir}/{save_name}.csv",index=False)
+    # save number of train_images, 'mAP@0.5', 'mAP@0.5..0.95' to a dataframe in the current directory
+    pd.DataFrame(columns=['num_train_image', 'mAP@0.5', 'mAP@0.5..0.95']).to_csv(f"{project_dir}/{save_name}.csv",
+                                                                                 index=False)
 
-    
-    #yaml file /yolov5/custom_data/temp_train.yml must point temp_train folder
+    # yaml file /yolov5/custom_data/temp_train.yml must point temp_train folder
     data = "yolov5/custom_data/temp.yml"
 
-    #the best model is default saved here
 
     project_name = "temp_results"
+    # the best model is default saved here, and we train yolov5s.
     model = f"{project_dir}/{project_name}/weights/best.pt"
     optimizer = "Adam"
 
     for sample_num in sample_numbers:
-        #update the number of images in temp_train folder
-        UpdateData(data_dir,project_dir,sample_num)
-        #train the model with sample_num images
+        # update the number of images in temp_train folder
+        UpdateData(data_dir, project_dir, sample_num)
+        # train the model with sample_num images
         print(f"beginning traning with {sample_num} images")
         time.sleep(5)
         os.system(f"python yolov5/train.py --data {data} --weights yolov5/yolov5s.pt \
                   --epoch {epoch} --optimizer {optimizer}  \
                   --project {project_dir} --name {project_name} \
-                  --cache --exist-ok --noval --seed 0" )
+                  --cache --exist-ok --noval --seed 0")
 
-        #wait for the model to be saved. Then start testing
+        # wait for the model to be saved. Then start testing
         time.sleep(5)
         print(f"testing the best model trained with {sample_num} images")
         os.system(f"python yolov5/val_erdi.py --data {data} --task test --weights {model} --num_train {sample_num}\
         --mysave_dir {project_dir} --mycsv_name {save_name}")
 
-    #remove the files, we dont need them
+    # remove the files, we don't need them
     if os.path.exists(f"{project_dir}/{project_name}"):
         shutil.rmtree(f"{project_dir}/{project_name}")
         print(f"removed {project_dir}/{project_name}")
@@ -511,14 +515,14 @@ def OptimumTrainImages(data_dir,project_dir,max_image_number,num_interval,epoch,
         shutil.rmtree(f"{project_dir}/temp")
         print(f"{project_dir}/temp")
 
-    #plot the results
+    # plot the results
     df = pd.read_csv(f"{project_dir}/{save_name}.csv")
     num_train = df['num_train_image']
     mAP_05 = df['mAP@0.5']
     mAP_0595 = df['mAP@0.5..0.95']
-    fig,ax = plt.subplots(figsize=(8,6))
-    ax.plot(num_train, mAP_05, label='mAP@0.5' ,marker='o')
-    ax.plot(num_train, mAP_0595, label='mAP@0.5:0.95',linestyle='--',marker='o')
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.plot(num_train, mAP_05, label='mAP@0.5', marker='o')
+    ax.plot(num_train, mAP_0595, label='mAP@0.5:0.95', linestyle='--', marker='o')
     ax.set_xlabel('#training images')
     ax.set_ylabel('score')
     ax.grid(True)
@@ -526,30 +530,23 @@ def OptimumTrainImages(data_dir,project_dir,max_image_number,num_interval,epoch,
     plt.show()
 
 
-
-
-def TrackMultipleExperiments(exp_dict,video_root_dir,model,conf_thresold=0.45,
-                             save_dir="./",name = "fdr",show_trace=False):
+def TrackMultipleExperiments(exp_dict, video_root_dir, model, conf_thresold=0.45,
+                             save_dir="./", name="fdr", show_trace=False):
     """
-    Assuming all videos has mp4 extention and located in video_root_dir. exp_name is always same with
-    it corresponding video.
+    Assuming all videos has mp4 extension and located in video_root_dir.
+    exp_name is always same with it corresponding video.
     :param exp_dict:{exp_name : #of objects}
     """
 
-    #save frame detection rates in a dataframe
+    # save frame detection rates in a dataframe
     fdr = pd.DataFrame(columns=['exp_name', 'detected', 'total_frame', 'frame_detection_rate'])
-    for index,exp_name in enumerate(exp_dict.keys()):
+    for index, exp_name in enumerate(exp_dict.keys()):
         nd = exp_dict[exp_name]
-        print([exp_name,nd])
+        print([exp_name, nd])
         video_path = f"{video_root_dir}/{exp_name}.mp4"
-        detected,total_frame,_ = TrackDroplet(model=model,conf_thresold=conf_thresold,nd=nd,
-                                            video_path=video_path, save_dir=save_dir,
-                                            save_name=exp_name,show_trace=show_trace)
-        fdr.loc[index] = [exp_name,detected, total_frame,round(detected/total_frame,5)]
+        detected, total_frame, _ = TrackDroplet(model=model, conf_thresold=conf_thresold, nd=nd,
+                                                video_path=video_path, save_dir=save_dir,
+                                                save_name=exp_name, show_trace=show_trace)
+        fdr.loc[index] = [exp_name, detected, total_frame, round(detected / total_frame, 5)]
 
     fdr.to_csv(f"{save_dir}/{name}.csv", index=False)
-
-
-
-
-
