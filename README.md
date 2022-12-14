@@ -17,7 +17,7 @@ Here is a brief overview of the content of this repo:
 4- figures folder should have all the figures we generated in the paper. paper_figures.ipynb generates some of these figures. 
 
 
-5- comparision folder has all the materials regarding the comparision between Hungarian Algorithm and StrongSORT.
+5- comparison folder has all the materials regarding the comparision between Hungarian Algorithm and StrongSORT.
 
 
 6- yolov5, Yolov5_StrongSORT_OSNet and labelImg are repos cloned from their original sources. For uniformity, we added them to our repo. Inside Yolov5_StrongSORT_OSNet/sort_track_results folder, 
@@ -26,17 +26,29 @@ you can find all tracking videos carried out with StrongSORT. Pay attention to m
 7- best_droplet.pt and best_intruder.pt are the Pytorch YOLO models we trained for walking droplet and granular flow experiments, respectively. 
 
 
-We provide a complete training course for your specific problem domain in **tutorial.ipynb**. This will walk you through all the steps from collecting the data to training your own tracker. All of the main driver functions are located in **myutils.py**. To get started, first of all install conda to your system, link is  [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html). I tested everything on my linux machine with Ubuntu 22.04.1 LTS. To create the conda environment, do the following from your terminal;
-
-> conda env create -f environment.yml
+We provide a complete training course for your specific problem domain in **tutorial.ipynb**. This will walk you through all the steps from creating the dataset to training your own tracker. I tested the following steps on my linux machine with Ubuntu 22.04.1 LTS.To get started, first install conda to your system, link is  [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html), then create/activate your environment using;
 
 
-> conda activate droptracker
+>> conda env create -f environment.yml
 
 
-> python3 -m pip install https://github.com/KaiyangZhou/deep-person-reid/archive/master.zip
+>> conda activate droptracker
 
 
-> jupyter notebook
+>> python -m pip install https://github.com/KaiyangZhou/deep-person-reid/archive/master.zip
 
-After that, you can go ahead and start working on **tutorial.ipynb** to create your own tracker. I did my best to explain every step in details. I hope you find it useful. Please let us know if you need any question or help. You can shoot an email to erdikara@spelman.edu.
+
+
+We would like to store our dataset, tracking results, and StrongSORT tracking results externally, as their combined size is approximately 8GB. To do this, use the following script to download and unzip the necessary files, and create three folders named *dataset*, *tracking_results*, and *sort_track_results* in your current directory.
+
+
+>> python download_data.py
+
+
+Lastly, start a notebook and start working on **tutorial.ipynb** to create your own tracker.
+
+
+>> jupyter notebook
+
+
+All of the main driver functions are located in **myutils.py**. I did my best to explain every step in details. I hope you find it useful. Please let us know if you need any question or help. You can shoot an email to erdikara@spelman.edu.
