@@ -42,10 +42,10 @@ Explantions of some of the files/folders are as follows. Note that (1),(3) and (
 3- *tracking_results*:  real-time tracking videos as well as csv files generated out of these experiments. We highly recommend to have a look at some of them.
 
 
-4- *figures folder*:  all the figures generated in the paper. paper_figures.ipynb generates some of these figures. 
+4- *figures*:  all the figures generated in the paper. paper_figures.ipynb generates some of these figures. 
 
 
-5- *comparison folder*:  materials regarding the comparision between Hungarian Algorithm and StrongSORT.
+5- *comparison*:  materials regarding the comparision between Hungarian Algorithm and StrongSORT.
 
 
 6- *sort_track_results*:  tracking videos carried out with StrongSORT. Pay attention to multiple ID switches.
@@ -54,7 +54,7 @@ Explantions of some of the files/folders are as follows. Note that (1),(3) and (
 7- yolov5, Yolov5_StrongSORT_OSNet and labelImg are repos cloned from their original sources. For uniformity, we added them to our repo
 
 
-8- best_droplet.pt and best_intruder.pt are the Pytorch YOLO models we trained for walking droplet and granular flow experiments, respectively. 
+8- *best_droplet.pt* and *best_intruder.pt* are the Pytorch YOLO models we trained for walking droplet and granular flow experiments, respectively. 
 
 
 
