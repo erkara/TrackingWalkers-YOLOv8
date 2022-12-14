@@ -29,7 +29,7 @@ Lastly, start a notebook and start working on **tutorial.ipynb** to create your 
 
 
 
-Explantions of some of the files/folders are as follows. Note that (2),(3) and (6) will appear after running the download script above. If it does not work for some reason, you can directly download them from Dropbox using the links in the output.
+Explantions of some of the files/folders are as follows. Note that (1),(3) and (6) will appear after running the download script above. If it does not work for some reason, you can directly download them from Dropbox using the links in the output.
 
 
 
