@@ -1,5 +1,7 @@
 # WalkingDropletTracking
-This repository includes all the datasets, codes, and other resources discussed in our paper X regarding walking droplets and granular flow experinents. 
+This repository includes all the datasets, codes, and other resources in our paper; 
+
+[Deep Learning Based Object Tracking in Walking Droplet and Granular Intruder Experiments](https://arxiv.org/abs/2302.05425)
 
 
 We provide a complete training course for your specific problem domain in **tutorial.ipynb**. This will walk you through all the steps from creating the dataset to training your own tracker. I tested the following steps on my linux machine with Ubuntu 22.04.1 LTS.To get started, first install conda to your system, link is  [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html), then create/activate your environment using;
