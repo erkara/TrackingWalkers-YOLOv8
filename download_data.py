@@ -30,8 +30,8 @@ def download_file(url,dest_dir="./"):
 
 def run():
     download_file(dataset_url)
-    #download_file(tracks_url)
-    #download_file(sota_tracks)
+    download_file(tracks_url)
+    download_file(sota_tracks)
 
 if __name__ == "__main__":
     run()
