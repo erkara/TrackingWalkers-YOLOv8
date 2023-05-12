@@ -2,9 +2,11 @@ import requests
 import shutil
 from tqdm.auto import tqdm
 import os
-dataset_url = "https://www.dropbox.com/s/bbydfkodu8uorlr/datasets.zip?dl=1"
-tracks_url = "https://www.dropbox.com/s/0r3jkhojpc72r8z/tracking_results.zip?dl=1"
-sort_tracks = "https://www.dropbox.com/s/tnyv784f0ec6qci/sort_track_results.zip?dl=1"
+#we store the files on Dropbox. If the following code does not
+#work for some reason, you can directly download them
+dataset_url = "https://www.dropbox.com/s/zwz6v7ysglenmg9/dataset.zip?dl=1"
+tracks_url = "https://www.dropbox.com/s/memj8ws34i87rhs/tracking_results.zip?dl=1"
+sota_tracks = "https://www.dropbox.com/s/yogbm7rwfrhl3wt/sota_tracks_multiple_droplets.zip?dl=1"
 
 def download_file(url,dest_dir="./"):
     file_path = f"{dest_dir}/temp.zip"
@@ -28,8 +30,8 @@ def download_file(url,dest_dir="./"):
 
 def run():
     download_file(dataset_url)
-    download_file(tracks_url)
-    download_file(sort_tracks)
+    #download_file(tracks_url)
+    #download_file(sota_tracks)
 
 if __name__ == "__main__":
     run()

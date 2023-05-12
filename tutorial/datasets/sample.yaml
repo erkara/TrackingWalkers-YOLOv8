@@ -1,0 +1,8 @@
+    path: /home/erkara/Dropbox/Research/Droplet/TrackingDroplets-YOLOv8/tutorial/datasets/
+    train: train/images  # train images (relative to 'path') 
+    val: valid/images  # val images (relative to 'path')
+    test: test/images # test images (optional)
+
+    nc: 1  # number of classes
+    names: ['droplet']  # class names
+    

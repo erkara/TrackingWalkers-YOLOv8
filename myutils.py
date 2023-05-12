@@ -3,17 +3,19 @@ import numpy as np
 import cv2
 import math
 import os
+import re
 from scipy import optimize
 import shutil
 import random
 import time
 import warnings
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 warnings.filterwarnings('ignore')
 
 
-def GetVideoInfo(video_path):
+def get_video_info(video_path):
     """
     Get some information about the video source
     :param video_path:
@@ -29,10 +31,16 @@ def GetVideoInfo(video_path):
     cap.release()
 
 
-def CaptureFrames(video_path, image_dir, save_interval=1):
+def capture_frames(video_path, image_dir, save_interval=1):
     """
     capture frames in every save_intervals(seconds)
     """
+    if os.path.exists((image_dir)):
+        shutil.rmtree(image_dir)
+        os.makedirs(image_dir)
+    else:
+        os.makedirs(image_dir)
+
     cap = cv2.VideoCapture(video_path)
     frameRate = cap.get(5)
     count = 0
@@ -54,22 +62,33 @@ def CaptureFrames(video_path, image_dir, save_interval=1):
     print(f'{count} frames captured! and saved to {image_dir}')
 
 
-def TrainValidTestSplit(image_dir, root_dir,
-                        train_ratio=0.7, valid_ratio=0.2, test_ratio=0.1):
+def train_valid_test_split(image_dir, dest_dir,
+                           train_ratio=0.7, valid_ratio=0.2, test_ratio=0.1):
     """
     This function first creates a folder structure for train/valid/test data as root_dir/X/images
     and root_dir/X/label. We then get images from image_dir and save to these folders accordingly
     based on the provided rations. Run only once, no safeguard to avoid duplicates.
     """
+
+    # dont change this, there is a bug in YOLOv8 that it requires your data to be in a folder
+    # named "datasets".
+    dest_dir = os.path.join(dest_dir, 'datasets')
+    if os.path.exists((dest_dir)):
+        shutil.rmtree(dest_dir)
+        os.makedirs(dest_dir)
+    else:
+        os.makedirs(dest_dir)
+
     # create the folder structure
+
     folders = ["train", "valid", "test"]
     for folder in folders:
-        os.makedirs(f"{root_dir}/{folder}/images", exist_ok=True)
-        os.makedirs(f"{root_dir}/{folder}/labels", exist_ok=True)
+        os.makedirs(f"{dest_dir}/{folder}/images", exist_ok=True)
+        os.makedirs(f"{dest_dir}/{folder}/labels", exist_ok=True)
 
-    train_dir = f"{root_dir}/train/images"
-    valid_dir = f"{root_dir}/valid/images"
-    test_dir = f"{root_dir}/test/images"
+    train_dir = f"{dest_dir}/train/images"
+    valid_dir = f"{dest_dir}/valid/images"
+    test_dir = f"{dest_dir}/test/images"
 
     # get all image paths and shuffle them up
     image_paths = []
@@ -96,8 +115,43 @@ def TrainValidTestSplit(image_dir, root_dir,
     \n{len(valid_image_list)} validation images copied to {valid_dir}\
     \n{len(test_image_list)} testing images copied to {test_dir}")
 
+    create_yaml_files(dest_dir)
 
-def GetImageAnnotationPairs(root_dir):
+
+def create_yaml_files(dest_dir):
+    # create a yaml file in order YOLOv8 to access our data.
+    content = f"""\
+        path: {os.path.abspath(dest_dir)}/
+        train: train/images  # train images (relative to 'dest_dir') 
+        val: valid/images  # val images (relative to 'dest_dir')
+        test: test/images # test images (optional)
+
+        nc: 1  # assuming one particle entity
+        names: ['droplet']  # class names
+        """
+
+    # Create the "sample.yaml" file
+    with open(f"{dest_dir}/sample.yaml", "w") as file:
+        file.write(content)
+
+    # dummy yaml file to test our model
+    content = f"""\
+            #this is just a dummy file to test our model by swapping valid-->test
+            path: {os.path.abspath(dest_dir)}/
+            train: train/images  # test images 
+            val: test/images  # val images
+
+            nc: 1  # assuming one particle entity
+            names: ['droplet']  # 
+            """
+    # Create the "sample.yaml" file
+    with open(f"{dest_dir}/dummy_test.yaml", "w") as file:
+        file.write(content)
+
+    print(f"created sample.yaml and dummy_test.yaml in {dest_dir} ")
+
+
+def get_image_annotation_pairs(root_dir):
     """
     Get the image-label directory list in an aligned fashion. 
     root_dir=train_dir,valid dir or test_dir. Beware of uncessary files
@@ -117,70 +171,32 @@ def GetImageAnnotationPairs(root_dir):
     return img_paths, lab_paths
 
 
-def CreateData(source_dir, dest_dir, n=1, exp='_', remove=True, rename=False):
-    """Grab n images/labels from source_dir and move them to dest_dir
-    accordingly. As usual, source_dir and dest_dir have the same structure.
-    If necessary, rename them using 'exp' name. Usually it is
-    a good idea to remove all the files in dest_dir.
-    """
-    img_paths, label_paths = GetImageAnnotationPairs(source_dir)
-    # get all if n=-1
-    if n == -1:
-        n = len(img_paths)
-    image2copy = img_paths[:n]
-    label2copy = label_paths[:n]
-    image_dir = os.path.join(dest_dir, 'images')
-    label_dir = os.path.join(dest_dir, 'labels')
-
-    # remove any existing files
-    if remove:
-        for file in os.scandir(image_dir):
-            os.remove(file.path)
-        for file in os.scandir(label_dir):
-            os.remove(file.path)
-    # copy new files
-    for image in image2copy:
-        shutil.copy(image, image_dir)
-        if rename:
-            old_name = image.split("/")[-1]
-            old_path = os.path.join(image_dir, old_name)
-            new_name = f"{exp}_{old_name}"
-            new_path = os.path.join(image_dir, new_name)
-            os.rename(old_path, new_path)
-    for labels in label2copy:
-        shutil.copy(labels, label_dir)
-        if rename:
-            old_name = labels.split("/")[-1]
-            old_path = os.path.join(label_dir, old_name)
-            new_name = f"{exp}_{old_name}"
-            new_path = os.path.join(label_dir, new_name)
-            os.rename(old_path, new_path)
-    print(f"removed all files from {image_dir} and created {len(image2copy)} images")
-
-
-def GetPredBboxes(model, img_path, color=(255, 0, 0)):
+def get_pred_box(model, img_path, color=(255, 0, 0)):
     """
     Return the image with predicted bounding boxes with confidance
     scores. Notice that this is only for single class prediction
     """
-    pred = model(img_path)
-    pred = pred.xyxy[0].detach().cpu().numpy()
+
+    detection = model(img_path, verbose=False)
+    detection = detection[0].boxes
+    locs = detection.xyxy.detach().cpu().numpy()
+    confidence_scores = detection.conf.detach().cpu().numpy()
     img = cv2.imread(img_path)
-    if (pred[0][5] == 0) & (pred.size != 0):
-        for i in range(pred.shape[0]):
-            xmin = int(pred[i][0])
-            ymin = int(pred[i][1])
-            xmax = int(pred[i][2])
-            ymax = int(pred[i][3])
+    if (detection.cls.sum() == 0) & (detection.shape[0] != 0):
+        for i in range(detection.shape[0]):
+            xmin = int(locs[i][0])
+            ymin = int(locs[i][1])
+            xmax = int(locs[i][2])
+            ymax = int(locs[i][3])
             img = cv2.rectangle(img, (xmin, ymax), (xmax, ymin), color, 1)
-            conf = str(round(pred[i][4], 2))
+            conf = str(round(confidence_scores[i], 2))
             img = cv2.putText(img, conf, (xmin, ymin - 5),
                               cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
 
     return img
 
 
-def GetImageBox(img_path, label_path, color=(0, 255, 0)):
+def get_image_box(img_path, label_path, color=(0, 255, 0)):
     """
     Given image and YOLO format label, return the image with bounding box(es)
     Return the box coordinated if necessary
@@ -208,330 +224,96 @@ def GetImageBox(img_path, label_path, color=(0, 255, 0)):
     return img
 
 
-def GetCenters(detection):
-    # (x_min,y_min,x_max,y_max,confidence,class)
-    pred = detection.xyxy[0].detach().cpu().numpy()
-    centers = np.zeros((pred.shape[0], 2))
-    conf_score = np.zeros(pred.shape[0])
-    for i in range(pred.shape[0]):
-        xc = (pred[i][0] + pred[i][2]) / 2
-        yc = (pred[i][1] + pred[i][3]) / 2
-        centers[i] = [xc, yc]
-        conf_score[i] = pred[i][4]
+def get_bb_centers(detection):
+    # bounding box coordindates
+    detection = detection[0].boxes
+    locs = detection.xyxy.detach().cpu().numpy()
+    # confidance scores
+    confidence_scores = detection.conf.detach().cpu().numpy()
+    m = locs.shape[0]
+    bb_centers = np.zeros((m, 2))
+    for i in range(m):
+        xc = (locs[i][0] + locs[i][2]) / 2
+        yc = (locs[i][1] + locs[i][3]) / 2
+        bb_centers[i] = [xc, yc]
 
-    return centers, conf_score
+    return bb_centers, confidence_scores
 
 
-def IsDetected(detection, conf_thresold, nd):
-    ##(x_min,y_min,x_max,y_max,confidence,class)->ndX6 arrray; actual pixels
+def get_image_with_bounding_box(detection, img, color=(0, 0, 255)):
+    detection = detection[0].boxes
+    locs = detection.xyxy.detach().cpu().numpy()
+    for i in range(detection.shape[0]):
+        xmin = int(locs[i][0])
+        ymin = int(locs[i][1])
+        xmax = int(locs[i][2])
+        ymax = int(locs[i][3])
+        img = cv2.rectangle(img, (xmin, ymax), (xmax, ymin), color, 1)
+    return img
+
+
+def is_detected(detection, conf_thresold, num_particle):
+    detection = detection[0].boxes
     # number of classes detected
-    classes = (detection.xyxy[0][:, 5] == 0).sum()
+    classes = (detection.cls.detach().cpu().numpy() == 0).sum()
     # accept only detections above a certain conf_thresold and count them
-    conf_scores = (detection.xyxy[0][:, 4] > conf_thresold).sum()
+    conf_scores = (detection.conf.detach().cpu().numpy() > conf_thresold).sum()
 
-    # 0:no detection, else we strictly accepts nd classes and confidance scores
-    size = detection.xyxy[0].numel()
+    # 0:no detection, else we strictly accept "nd" classes and confidence scores
+    size = detection.shape[0]
     if size != 0:
-        if classes == nd & conf_scores == nd:
+        if classes == num_particle & conf_scores == num_particle:
             return True
     else:
         return False
 
 
-def AddSpeed2DataFrameMulti(df, nd):
-    # find the zero time stamps(except the first one) and replace them with
-    # the appropriate time starting from the last nonzero time using dt
-    time_zeros = df[(df['time'].index > 1) & (df['time'] == 0.0)]
-    if time_zeros.size != 0:
-        t1 = df.loc[time_zeros.index[0] - 1, 'time']
-        t2 = df.loc[time_zeros.index[0] - 2, 'time']
-        dt = t1 - t2
-        new_times = [(i + 1) * dt + t1 for i in range(time_zeros.shape[0])]
-        df.loc[time_zeros.index, 'time'] = new_times
-
-    t = df['time'].values
-    for i in range(nd):
-        xc = df.iloc[:, 2 * (i + 1)].values
-        yc = df.iloc[:, 2 * (i + 1) + 1].values
-        dx = np.zeros(xc.size)
-        dx[1:] = np.diff(xc) / np.diff(t)
-        dy = np.zeros(yc.size)
-        dy[1:] = np.diff(yc) / np.diff(t)
-        speed = np.sqrt(dx ** 2 + dy ** 2)
-        df[f'dx{i + 1}'] = dx
-        df[f'dy{i + 1}'] = dy
-        df[f'speed{i + 1}'] = speed
-    return df
-
-
-def GetColNames(nd):
+def get_col_names(num_particle):
     l = []
-    for i in range(nd):
+    for i in range(num_particle):
         xname = f'x{i + 1}'
         l.append(xname)
         yname = f'y{i + 1}'
         l.append(yname)
-    for i in range(nd):
+    for i in range(num_particle):
         c_name = f'c{i + 1}'
         l.append(c_name)
 
     l.insert(0, 'frame_id')
     l.insert(1, 'time')
+    l.insert(2, 'detected')
 
     return l
 
 
-def GetNextCoordHungarian(nd, f1, f2, time, frameID, conf_score):
-    cost = [[0 for i in range(nd)] for j in range(nd)]
-    for i in range(nd):
-        for j in range(nd):
+def get_next_coord_hungarian(num_particle, f1, f2, time, frameID, conf_score, detected):
+    cost = [[0 for i in range(num_particle)] for j in range(num_particle)]
+    for i in range(num_particle):
+        for j in range(num_particle):
             cost[i][j] = np.sum((f1[i] - f2[j]) ** 2)
     row_ind, col_ind = optimize.linear_sum_assignment(cost)
     temp_all = f2[col_ind[np.argsort(row_ind)]].flatten()
     temp_all = np.insert(temp_all, 0, frameID)
     temp_all = np.insert(temp_all, 1, time)
+    temp_all = np.insert(temp_all, 2, detected)
     temp_all = np.append(temp_all, conf_score)
 
     return f2[col_ind[np.argsort(row_ind)]], temp_all
 
 
-def TrackDroplet(model, nd, video_path, conf_thresold, save_dir, save_name, show_trace=False):
-    """
+def generate_colors(num_particle):
+    # Define the first four colors as green, blue, yellow, and magenta
+    colors = [(0, 255, 0), (255, 0, 0), (0, 255, 255), (255, 0, 255)]
 
-    Args:
-        model: YOLOV5 model
-        nd: number of droplets
-        video_path: droplet video source
-        conf_thresold: do not accept the detections below this thresold
-        save_dir: save the tracking video
-        save_name: name of the video and dataframe to be saved
-        show_trace: display trace in real time,defaul:false
+    # Generate additional colors randomly
+    for _ in range(num_particle - 4):
+        colors.append((random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)))
 
-    Returns:
-        data:   Given the experiment with single or multiple droplets, inspect real time tracking and
-        save the location and speed information for the individual droplets as a dataframe
-        Notice the structure of data.
-    """
-
-    if show_trace:
-        name = f"{save_name}_trace"
-    else:
-        name = f"{save_name}_bb"
-
-    cap = cv2.VideoCapture(video_path)
-
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    size = (w, h)
-
-    myvideo = cv2.VideoWriter(f'{save_dir}/{name}.avi', cv2.VideoWriter_fourcc(*'mp4v'), fps, size)
-
-    drop = []
-    for i in range(nd):
-        drop.append([])
-
-    frame_counter = 0
-    detect_counter = 0
-
-    # BGR--> green,red,blue
-    colors = [(0, 255, 0), (0, 0, 255), (255, 0, 0), (255, 0, 255), (0, 255, 255)]
-
-    data = pd.DataFrame(columns=GetColNames(nd))
-    while cap.isOpened():
-        success, frame = cap.read()
-        if (success != True):
-            break
-        frameID = cap.get(1)
-
-        frame_counter += 1
-
-        time_second = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
-
-        detection = model(frame)
-        if IsDetected(detection, conf_thresold, nd):
-            # openCV returns 0 time stamp for the few frames at the end, bug in progress.
-
-            detect_counter += 1
-            np_image = np.squeeze(detection.render(labels=False))
-            centers, conf_score = GetCenters(detection)
-            if detect_counter == 1:
-                C0 = centers
-                for i in range(nd):
-                    drop[i].append(C0[i, :])
-
-                row0 = C0.flatten()
-                row0 = np.insert(row0, 0, int(frameID))
-                row0 = np.insert(row0, 1, time_second)
-                row0 = np.append(row0, conf_score)
-                data.loc[detect_counter] = row0
-                t0 = time_second
-
-            if detect_counter > 1:
-                C1, temp_all = GetNextCoordHungarian(nd, C0, centers, time_second, int(frameID), conf_score)
-                data.loc[detect_counter] = temp_all
-                C0 = C1
-
-                for i in range(nd):
-                    drop[i].append(C1[i, :])
-
-                for i in range(nd):
-                    pts = np.array(drop[i], np.int32)
-                    if show_trace:
-                        cv2.polylines(np_image, [pts], False, colors[i], thickness=2)
-                        cv2.putText(np_image, f'{i}', (int(C0[i][0]), int(C0[i][1]) - 10),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, colors[i], 2)
-                    else:
-                        cv2.putText(np_image, f'{i}', (int(C0[i][0]), int(C0[i][1]) - 10),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, colors[i], 2)
-                myvideo.write(np_image)
-                cv2.imshow(f'{name}', np_image)
-
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    cap.release()
-    cv2.destroyAllWindows()
-
-    print(f'{detect_counter}/{frame_counter}={100 * (detect_counter / frame_counter):0.2f}% detected! in \
-        {save_name} experiment\n')
-    data = AddSpeed2DataFrameMulti(data, nd)
-    data.to_csv(f'{save_dir}/{save_name}.csv', index=False)
-    print(f"results are saved to {save_dir}...")
-
-    return detect_counter, frame_counter, data
+    return colors
 
 
-def UpdateData(data_dir, dest_dir, N):
-    """
-    Copy N images from data_dir/train and data_dir/valid
-    to dest_dir/train and dest_dir/valid. We do this to dynamically
-    train a model with increasing number of train/valid images.
-    """
-    K = int(np.ceil((N / 0.7) * 0.2))
-    root_train_dir = f"{data_dir}/train"
-    root_valid_dir = f"{data_dir}/valid"
-
-    temp_dir = f"{dest_dir}/temp"
-    if not os.path.exists(temp_dir):
-        shutil.copytree(data_dir, temp_dir)
-
-    temp_train_imagedir = os.path.join(temp_dir, 'train/images')
-    temp_train_labeldir = os.path.join(temp_dir, 'train/labels')
-
-    temp_valid_imagedir = os.path.join(temp_dir, 'valid/images')
-    temp_valid_labeldir = os.path.join(temp_dir, 'valid/labels')
-
-    x = [root_train_dir, root_valid_dir]
-    y = [temp_train_imagedir, temp_valid_imagedir]
-    z = [temp_train_labeldir, temp_valid_labeldir]
-
-    i = 0
-    for (root_dir, temp_image_dir, temp_label_dir) in zip(x, y, z):
-        img_paths, lab_paths = GetImageAnnotationPairs(root_dir)
-        if i == 1:
-            N = K
-        if N > len(img_paths):
-            print(f"{root_dir} does not have {N} images, switching to N={len(img_paths) - 1}!\n")
-            N = len(img_paths) - 1
-
-        img2copy = img_paths[:N]
-        lab2copy = lab_paths[:N]
-
-        # empty temp_train_dir then populate it
-        if len(os.listdir(temp_image_dir)) != 0:
-            for file in os.scandir(temp_image_dir):
-                os.remove(file.path)
-            for file in os.scandir(temp_label_dir):
-                os.remove(file.path)
-            for image in img2copy:
-                shutil.copy(image, temp_image_dir)
-            for labels in lab2copy:
-                shutil.copy(labels, temp_label_dir)
-        else:
-            for image in img2copy:
-                shutil.copy(image, temp_image_dir)
-            for labels in lab2copy:
-                shutil.copy(labels, temp_label_dir)
-        print(f"updated {temp_image_dir} folder with {N} new images/labels out of {len(img_paths)} from {root_dir}")
-
-        i += 1
-
-
-def OptimumTrainImages(data_dir, project_dir, max_image_number=150, start_image_num=5, final_image_num=150,
-                       num_interval=5, epoch=50, save_name='test_scores'):
-    """
-    Inspect optimum number of images to train your model. Every action is performed in project_dir/temp folder
-    then we remove it. We train/test the model for number of images between from start_image_num and final_image_num
-    with num_interval intervals for epoch numbers.
-    """
-
-    if final_image_num > max_image_number:
-        print(f"dont have {final_image_num} images, switching to {max_image_number} images")
-        final_image_num = max_image_number
-    if start_image_num < 4:
-        print("cannot keep 0.7/0.2 train/test ratio with {start_image_num} intial images switching to 4")
-        start_image_num = 4
-
-    sample_numbers = [num for num in range(start_image_num, final_image_num + 1) if num % num_interval == 0]
-
-    print(f"we will train model with {sample_numbers} training images")
-
-    # save number of train_images, 'mAP@0.5', 'mAP@0.5..0.95' to a dataframe in the current directory
-    pd.DataFrame(columns=['num_train_image', 'mAP@0.5', 'mAP@0.5..0.95']).to_csv(f"{project_dir}/{save_name}.csv",
-                                                                                 index=False)
-
-    # yaml file /yolov5/custom_data/temp_train.yml must point temp_train folder
-    data = "yolov5/custom_data/temp.yml"
-
-
-    project_name = "temp_results"
-    # the best model is default saved here, and we train yolov5s.
-    model = f"{project_dir}/{project_name}/weights/best.pt"
-    optimizer = "Adam"
-
-    for sample_num in sample_numbers:
-        # update the number of images in temp_train folder
-        UpdateData(data_dir, project_dir, sample_num)
-        # train the model with sample_num images
-        print(f"beginning traning with {sample_num} images")
-        time.sleep(5)
-        os.system(f"python yolov5/train.py --data {data} --weights yolov5/yolov5s.pt \
-                  --epoch {epoch} --optimizer {optimizer}  \
-                  --project {project_dir} --name {project_name} \
-                  --cache --exist-ok --noval --seed 0")
-
-        # wait for the model to be saved. Then start testing
-        time.sleep(5)
-        print(f"testing the best model trained with {sample_num} images")
-        os.system(f"python yolov5/val_erdi.py --data {data} --task test --weights {model} --num_train {sample_num}\
-        --mysave_dir {project_dir} --mycsv_name {save_name}")
-
-    # remove the files, we don't need them
-    if os.path.exists(f"{project_dir}/{project_name}"):
-        shutil.rmtree(f"{project_dir}/{project_name}")
-        print(f"removed {project_dir}/{project_name}")
-    if os.path.exists(f"{project_dir}/temp"):
-        shutil.rmtree(f"{project_dir}/temp")
-        print(f"{project_dir}/temp")
-
-    # plot the results
-    df = pd.read_csv(f"{project_dir}/{save_name}.csv")
-    num_train = df['num_train_image']
-    mAP_05 = df['mAP@0.5']
-    mAP_0595 = df['mAP@0.5..0.95']
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.plot(num_train, mAP_05, label='mAP@0.5', marker='o')
-    ax.plot(num_train, mAP_0595, label='mAP@0.5:0.95', linestyle='--', marker='o')
-    ax.set_xlabel('#training images')
-    ax.set_ylabel('score')
-    ax.grid(True)
-    ax.legend()
-    plt.show()
-
-
-def TrackMultipleExperiments(exp_dict, video_root_dir, model, conf_thresold=0.45,
-                             save_dir="./", name="fdr", show_trace=False):
+def track_multiple_experiment(exp_dict, video_root_dir, model, conf_thresold=0.45,
+                              save_dir="./", name="fdr", show_trace=False):
     """
     Assuming all videos has mp4 extension and located in video_root_dir.
     exp_name is always same with it corresponding video.
@@ -539,14 +321,204 @@ def TrackMultipleExperiments(exp_dict, video_root_dir, model, conf_thresold=0.45
     """
 
     # save frame detection rates in a dataframe
-    fdr = pd.DataFrame(columns=['exp_name', 'detected', 'total_frame', 'frame_detection_rate'])
+    fdr = pd.DataFrame(columns=['exp_name', 'detected', 'total_frame', 'frame_detection_rate', 'simulation_time'])
     for index, exp_name in enumerate(exp_dict.keys()):
-        nd = exp_dict[exp_name]
-        print([exp_name, nd])
+        num_particle = exp_dict[exp_name]
+        print([exp_name, num_particle])
         video_path = f"{video_root_dir}/{exp_name}.mp4"
-        detected, total_frame, _ = TrackDroplet(model=model, conf_thresold=conf_thresold, nd=nd,
-                                                video_path=video_path, save_dir=save_dir,
-                                                save_name=exp_name, show_trace=show_trace)
-        fdr.loc[index] = [exp_name, detected, total_frame, round(detected / total_frame, 5)]
+        detect_counter, total_frame, simulation_time = track_droplet(model, num_particle, video_path,
+                                                                     conf_thresold, save_dir,
+                                                                     save_name=exp_name, show_trace=show_trace)
+        fdr.loc[index] = [exp_name, detect_counter, total_frame, round(detect_counter / total_frame, 5),
+                          round(simulation_time, 2)]
 
-    fdr.to_csv(f"{save_dir}/{name}.csv", index=False)
+    csv_path = f"{save_dir}/{name}.csv"
+    fdr.to_csv(csv_path, index=False)
+    print(f"frame detection rates saved to {csv_path}")
+
+
+# after revision
+
+
+def track_droplet(model, num_particle, video_path, conf_thresold, save_dir, save_name, show_trace=False):
+    if os.path.exists(save_dir):
+        shutil.rmtree(save_dir)
+        os.makedirs(save_dir)
+    else:
+        os.makedirs(save_dir)
+
+    if show_trace:
+        name = f"{save_name}_trace"
+    else:
+        name = f"{save_name}_bb"
+
+    cap = cv2.VideoCapture(video_path)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    size = (w, h)
+
+    myvideo = cv2.VideoWriter(f'{save_dir}/{name}.mp4', cv2.VideoWriter_fourcc(*'mp4v'), fps, size)
+
+    drop = []
+    for i in range(num_particle):
+        drop.append([])
+
+    frame_counter = 0
+    # openCV returns 0 time stamp for the few frames at the end, bug in progress.
+    # Thus, we exclude those from our analysis but keep an eye one them anyway
+    broken_frame_counter = 0
+    detect_counter = 0
+
+    # get colors
+    colors = generate_colors(num_particle)
+
+    data = pd.DataFrame(columns=get_col_names(num_particle))
+
+    simulation_time = 0
+    while cap.isOpened() and frame_counter + broken_frame_counter < total_frames:
+        inference_start = time.time()
+        success, frame = cap.read()
+        if (success != True):
+            broken_frame_counter += 1
+            continue
+
+        frame_counter += 1
+        frameID = cap.get(1)
+        time_second = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
+
+        detection = model(frame, verbose=False)
+        centers, conf_score = get_bb_centers(detection)
+
+        if is_detected(detection, conf_thresold, num_particle):
+            detected = 1
+            detect_counter += 1
+            # np_image = detection[0].plot(labels=False)--> bug in the current yolov8 version
+            image_with_bb = get_image_with_bounding_box(detection, frame)
+            if detect_counter == 1:
+                C0 = centers
+                for i in range(num_particle):
+                    drop[i].append(C0[i, :])
+
+                row0 = C0.flatten()
+                row0 = np.insert(row0, 0, int(frameID))
+                row0 = np.insert(row0, 1, time_second)
+                row0 = np.insert(row0, 2, int(detected))  # Detected
+                row0 = np.append(row0, conf_score)
+
+                data.loc[frame_counter] = row0
+
+            if detect_counter > 1:
+                C1, temp_all = get_next_coord_hungarian(num_particle, C0, centers, time_second, int(frameID),
+                                                        conf_score, int(detected))
+                data.loc[frame_counter] = temp_all
+                C0 = C1
+
+
+
+                for i in range(num_particle):
+                    drop[i].append(C1[i, :])
+                for i in range(num_particle):
+                    pts = np.array(drop[i], np.int32)
+                    if show_trace:
+                        cv2.polylines(image_with_bb, [pts], False, colors[i], thickness=2)
+                        cv2.putText(image_with_bb, f'{i}', (int(C0[i][0]) + 10, int(C0[i][1])),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, colors[i], 2)
+                    else:
+                        cv2.putText(image_with_bb, f'{i}', (int(C0[i][0]) + 10, int(C0[i][1])),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, colors[i], 2)
+                myvideo.write(image_with_bb)
+                cv2.imshow(f'{name}', image_with_bb)
+
+        else:
+            detected = 0
+            missed_frame_row = [frame_counter, time_second, int(detected)] + [np.nan] * (len(data.columns) - 3)
+            data.loc[frame_counter] = missed_frame_row
+
+        # exclude visualization time from the inference
+        simulation_time += time.time() - inference_start
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+    print(
+        f'experiment: {save_name} detection_rate: {detect_counter}/{frame_counter} = {100 * (detect_counter / frame_counter):0.3f}%')
+
+    csv_path = os.path.join(save_dir, f'{save_name}.csv')
+    if os.path.exists(csv_path):
+        os.remove(csv_path)
+    data.to_csv(csv_path, index=False)
+    print(f"trajectories saved to {csv_path}")
+
+    return detect_counter, frame_counter, simulation_time
+
+
+# use this function if you are sure there is no ID swithces(maybe single droplet exps)
+# since this function is just to measure inference time.
+def save_trajectory_only(model, num_particle, video_path, conf_thresold, save_dir, save_name):
+    cap = cv2.VideoCapture(video_path)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    frame_counter = 0
+    broken_frame_counter = 0
+    detect_counter = 0
+
+    data = pd.DataFrame(columns=get_col_names(num_particle))
+    start_time = time.time()
+    with tqdm(total=total_frames, desc="Processing frames", ncols=100) as progress_bar:
+        while cap.isOpened() and frame_counter + broken_frame_counter < total_frames:
+            success, frame = cap.read()
+            if (success != True):
+                print(f'broken frame')
+                broken_frame_counter += 1
+                continue
+            frame_counter += 1
+            frameID = cap.get(1)
+            time_second = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
+
+            detection = model(frame, verbose=False)
+            centers, conf_score = get_bb_centers(detection)
+            if is_detected(detection, conf_thresold, num_particle):
+                detected = 1
+
+                detect_counter += 1
+                if detect_counter == 1:
+                    C0 = centers
+                    row0 = C0.flatten()
+                    row0 = np.insert(row0, 0, int(frameID))
+                    row0 = np.insert(row0, 1, time_second)
+                    row0 = np.insert(row0, 2, detected)  # Detected
+                    row0 = np.append(row0, conf_score)
+
+                    data.loc[frame_counter] = row0
+                if detect_counter > 1:
+                    C1, temp_all = get_next_coord_hungarian(num_particle, C0, centers, time_second, int(frameID),
+                                                            conf_score, detected)
+                    data.loc[frame_counter] = temp_all
+                    C0 = C1
+            else:
+                detected = 0
+                missed_frame_row = [frame_counter, time_second, detected] + [np.nan] * (len(data.columns) - 3)
+                data.loc[frame_counter] = missed_frame_row
+
+            progress_bar.update(1)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+    cap.release()
+    cv2.destroyAllWindows()
+    simulation_time = time.time() - start_time
+
+    print(
+        f'experiment: {save_name} detection_rate: {detect_counter}/{frame_counter} = {100 * (detect_counter / frame_counter):0.2f}%')
+
+    csv_path = os.path.join(save_dir, f'{save_name}.csv')
+    if os.path.exists(csv_path):
+        os.remove(csv_path)
+    data.to_csv(csv_path, index=False)
+    print(f"results are saved to {csv_path}...")
+
+    return detect_counter, frame_counter, data, simulation_time

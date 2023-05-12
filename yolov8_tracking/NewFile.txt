@@ -1,0 +1,1 @@
+python track.py  --yolo-weights ../best_yolov8_droplet.pt --img 640  --tracking-method strongsort --source ../temp/three_droplet_short.mp4 --save-vid --save-txt --conf-thres 0.45  --exist-ok --project yolov8_tracks --name 'three_droplet_short' --show-vid                   
