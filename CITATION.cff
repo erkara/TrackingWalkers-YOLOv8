@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+preferred-citation:
+  type: software
+  message: "If you use this repo, please cite it as below."
+  authors:
+  - family-names: Kara
+    given-names: Erdi
+  title: "Real-time droplet tracking with YOLOv8"
+  version: 1.0.0
+  doi: 10.5281/zenodo.7930552
+  date-released: 2023-5
+  license: GPL-3.0
+  url: "https://github.com/erkara/TrackingWalkers-YOLOv8"
