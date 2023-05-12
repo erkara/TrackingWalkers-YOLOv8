@@ -43,4 +43,8 @@ Lastly, start a notebook and start working on **tutorial/tutorial.ipynb** to cre
 
 
 
+
+[![DOI](https://zenodo.org/badge/575661270.svg)](https://zenodo.org/badge/latestdoi/575661270)
+
+
 Please let us know if you need any question or help. You can shoot an email to erdikara@spelman.edu.
