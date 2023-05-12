@@ -1,4 +1,5 @@
 # TrackingWalkers-YOLOv8
+[![DOI](https://zenodo.org/badge/575661270.svg)](https://zenodo.org/badge/latestdoi/575661270)
 This repository includes all the datasets, codes, and other resources discussed in our paper 
 
 [Deep Learning Based Object Tracking in Walking Droplet and Granular Intruder Experiments](https://arxiv.org/abs/2302.05425) 
@@ -44,7 +45,7 @@ Lastly, start a notebook and start working on **tutorial/tutorial.ipynb** to cre
 
 
 
-[![DOI](https://zenodo.org/badge/575661270.svg)](https://zenodo.org/badge/latestdoi/575661270)
+
 
 
 Please let us know if you need any question or help. You can shoot an email to erdikara@spelman.edu.
