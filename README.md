@@ -48,6 +48,4 @@ Lastly, start a notebook and start working on **tutorial/tutorial.ipynb** to cre
 
 
 
-
-
-Please let us know if you need any question or help. You can shoot an email to erdikara@spelman.edu.
+We will soon add a procedure to create a particle simulation on top of existing ground truth trajectories. This allows us to test our trackers with large number of particles in a somewhat realistics environment. Please let us know if you need any question or help. You can shoot an email to erdikara@spelman.edu.
