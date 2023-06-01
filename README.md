@@ -45,7 +45,9 @@ Lastly, start a notebook and start working on **tutorial/tutorial.ipynb** to cre
 6- "best_yolov8_droplet.pt" and "best_yolov8_intruder.pt" are the YOLOv8 models we trained for walking droplet and granular flow experiments, respectively. 
 
 
+7- *droplet_simulation*: synthetic simulations built on top of existing ground truth droplet trajectories. Details can be found in "droplet_simulation.ipynb" within this folder.
 
 
 
-We will soon add a procedure to create a particle simulation on top of existing ground truth trajectories. This allows us to test our trackers with large number of particles in a somewhat realistics environment. Please let us know if you need any question or help. You can shoot an email to erdikara@spelman.edu.
+
+Please let us know if you need any question or help. You can shoot an email to erdikara@spelman.edu.
