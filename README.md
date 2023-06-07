@@ -18,13 +18,17 @@ We provide an end-to-and tutorial in *tutorial* folder. This will walk you throu
 >> conda activate droptracker
 
 
-We would like to store our dataset, tracking results, and tracking results from five SOTA trackers externally, as their combined size is approximately 7GB. To do this, use the following script to download and create three folders named *dataset*, *tracking_results*, and *sota_tracks_multiple_droplets* in your current directory. If the download script is not invoked for some reason, you can directly download them from Dropbox using the links in the output.
+The procedure above may throw some errors on Windows or Mac. If you installed Anaconda, it comes with pre-install modules. On top of those, just install ultralytics library.
+
+>> pip install ultralytics
+
+This should be enough to complete the tutorial given in "tutorial" folder. We would like to store our dataset, tracking results, and tracking results from five SOTA trackers externally, as their combined size is approximately 7GB. To do this, use the following script to download and create three folders named *dataset*, *tracking_results*, and *sota_tracks_multiple_droplets* in your current directory. If the download script is not invoked for some reason, you can directly download them from Dropbox using the links in the output.
 
 
 >> python download_data.py
 
 
-Lastly, start a notebook and start working on **tutorial/tutorial.ipynb** to create your own tracker. All of the main driver functions are located in **myutils.py**. I did my best to explain every step in details. I hope you find it useful. Explantions of some of the files/folders are as follows. Note that (1),(3) and (6) will appear after running the download script above. 
+Lastly, start a notebook and start working on **tutorial/tutorial.ipynb** to create your own tracker. All of the main driver functions are located in **myutils.py**. I did my best to explain every step in details. I hope you find it useful. Explantions of some of the files/folders are as follows. Note that (1),(3) and (4) will appear after running the download script above. 
 
 
 
