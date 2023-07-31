@@ -55,12 +55,12 @@ Please let us know if you need any question or help. You can shoot an email to e
 If you find this repo useful please cite as 
 
 
-@article{kara2023deep,
-  title={Deep Learning Based Object Tracking in Walking Droplet and Granular Intruder Experiments},
-  author={Kara, Erdi and Zhang, George and Williams, Joseph J and Ferrandez-Quinto, Gonzalo and Rhoden, Leviticus J and Kim, Maximilian and Kutz, J Nathan and Rahman, Aminur},
-  journal={arXiv preprint arXiv:2302.05425},
-  year={2023}
-}
-
+          @article{kara2023deep,
+            title={Deep Learning Based Object Tracking in Walking Droplet and Granular Intruder Experiments},
+            author={Kara, Erdi and Zhang, George and Williams, Joseph J and Ferrandez-Quinto, Gonzalo and Rhoden, Leviticus J and Kim, Maximilian and Kutz, J Nathan and Rahman, Aminur},
+            journal={arXiv preprint arXiv:2302.05425},
+            year={2023}
+          }
+          
 
 
