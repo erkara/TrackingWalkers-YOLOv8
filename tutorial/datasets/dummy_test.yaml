@@ -1,8 +1,0 @@
-            #this is just a dummy file to test our model by swapping valid-->test
-            path: /home/erkara/Dropbox/Research/Droplet/TrackingDroplets-YOLOv8/tutorial/datasets/
-            train: train/images  # test images 
-            val: test/images  # val images
-
-            nc: 1  # assuming one particle entity
-            names: ['droplet']  # 
-            

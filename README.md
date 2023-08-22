@@ -9,18 +9,9 @@ This repository includes all the datasets, codes, and other resources discussed 
 regarding walking droplets and granular flow experinents. 
 
 
-We provide an end-to-and tutorial in *tutorial* folder. This will walk you through all the steps from creating the dataset to training your own tracker. I tested the following steps on my linux machine with Ubuntu 22.04.1 LTS.To get started, first install conda to your system, link is  [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html), then create/activate your environment using;
+We provide an end-to-and tutorial in *tutorial* folder. This will walk you through all the steps from creating the dataset to training your own tracker. I tested the following steps on my linux machine with Ubuntu 22.04.1 LTS.To get started, first install conda to your system, link is  [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html). Next, install ultralytics and roboflow libraries.
 
-
->> conda env create -f environment.yml
-
-
->> conda activate droptracker
-
-
-The procedure above may throw some errors on Windows or Mac. If you installed Anaconda, it comes with pre-install modules. On top of those, just install ultralytics library.
-
->> pip install ultralytics
+>> pip install roboflow ultralytics
 
 This should be enough to complete the tutorial given in "tutorial" folder. We would like to store our dataset, tracking results, and tracking results from five SOTA trackers externally, as their combined size is approximately 7GB. To do this, use the following script to download and create three folders named *dataset*, *tracking_results*, and *sota_tracks_multiple_droplets* in your current directory. If the download script is not invoked for some reason, you can directly download them from Dropbox using the links in the output.
 
@@ -43,7 +34,7 @@ Lastly, start a notebook and start working on **tutorial/tutorial.ipynb** to cre
 
 4- *sota_tracks_multiple_droplets*:  tracking videos carried out with five SOTA models on top of YOLOv8 detections. For simplicity, we provide the results only for two and three droplets. To generate the rest, use the the very last cell in the tutorial notebook. 
 
-5- "yolov8_tracking" and "labelImg" are cloned from their original sources. For uniformity, we added them to our repo.
+5- "yolov8_tracking" is cloned from their original sources. For uniformity, we added them to our repo.
 
 
 6- "best_yolov8_droplet.pt" and "best_yolov8_intruder.pt" are the YOLOv8 models we trained for walking droplet and granular flow experiments, respectively. 
@@ -51,8 +42,8 @@ Lastly, start a notebook and start working on **tutorial/tutorial.ipynb** to cre
 
 7- *droplet_simulation*: synthetic simulations built on top of existing ground truth droplet trajectories. Details can be found in "droplet_simulation.ipynb" within this folder.
 
-Please let us know if you need any question or help. You can shoot an email to erdikara@spelman.edu.
-If you find this repo useful please cite as 
+
+Please let us know if you need any question or help. You can shoot an email to erdikara@spelman.edu. If you find this repo useful please cite as 
 
           @article{kara2023deep,
             title={Deep learning based object tracking in walking droplet and granular intruder experiments},
