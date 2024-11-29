@@ -4,7 +4,7 @@
 
 This repository includes all the datasets, codes, and other resources discussed in our paper 
 
-[Deep Learning Based Object Tracking in Walking Droplet and Granular Intruder Experiments](https://arxiv.org/abs/2302.05425) 
+[Deep Learning Based Object Tracking in Walking Droplet and Granular Intruder Experiments](https://link.springer.com/article/10.1007/s11554-023-01341-4) 
 
 regarding walking droplets and granular flow experinents. 
 
